@@ -47,14 +47,14 @@ jobs:
       - name: Build packages
         run: |
           # Install dependencies to ensure the package can be built
-          uv pip install build
+          uv pip install --system build
           
           # Build source distribution and wheel
           python -m build
 
       - name: Verify package
         run: |
-          uv pip install twine
+          uv pip install --system twine
           twine check dist/*
 
       - name: Create release assets directory
