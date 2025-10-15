@@ -82,8 +82,3 @@ jobs:
           prerelease: false
           artifacts: "dist/*,release-assets/*"
 
-      - name: Publish to PyPI
-        env:
-          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
-        run: |
-          uv publish
