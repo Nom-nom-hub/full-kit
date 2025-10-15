@@ -21,6 +21,10 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v3
 
+      - name: Install TOML parsing libraries
+        run: |
+          pip install tomli toml
+
       - name: Get current version from pyproject.toml
         id: version
         run: |
