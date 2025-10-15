@@ -1,0 +1,43 @@
+name: Pull Request
+
+on:
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+
+    - name: Install dependencies
+      run: |
+        uv pip install --system -e .
+
+    - name: Run basic functionality test
+      run: |
+        # Test that the CLI can be imported and has the expected structure
+        python -c "
+        import fullkit_cli
+        import sys
+        
+        # Verify the main functions exist
+        assert hasattr(fullkit_cli, 'init'), 'init function missing'
+        assert hasattr(fullkit_cli, 'check'), 'check function missing'
+        assert hasattr(fullkit_cli, 'main'), 'main function missing'
+        
+        # Verify agent config has expected agents
+        expected_agents = ['copilot', 'claude', 'gemini', 'cursor-agent', 'qwen', 'opencode', 'codex', 'windsurf', 'kilocode', 'auggie', 'codebuddy', 'roo', 'q']
+        for agent in expected_agents:
+            assert agent in fullkit_cli.AGENT_CONFIG, f'Agent {agent} missing from config'
+        
+        print('All basic functionality tests passed!')
+        "

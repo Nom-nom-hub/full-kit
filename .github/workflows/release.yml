@@ -1,0 +1,81 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Get current version from pyproject.toml
+        id: version
+        run: |
+          VERSION=$(python -c "import tomli; print(tomli.load(open('pyproject.toml'))['project']['version'])" 2>/dev/null || python -c "import toml; print(toml.load(open('pyproject.toml'))['project']['version'])")
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Verify tag matches pyproject.toml version
+        run: |
+          TAG=${GITHUB_REF#refs/tags/}
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "Tag format is incorrect. Use v0.0.0 format."
+            exit 1
+          fi
+          
+          if [[ "v${{ steps.version.outputs.version }}" != "$TAG" ]]; then
+            echo "Tag '$TAG' does not match pyproject.toml version 'v${{ steps.version.outputs.version }}'"
+            exit 1
+          fi
+
+      - name: Build packages
+        run: |
+          # Install dependencies to ensure the package can be built
+          uv pip install build
+          
+          # Build source distribution and wheel
+          python -m build
+
+      - name: Verify package
+        run: |
+          uv pip install twine
+          twine check dist/*
+
+      - name: Create release assets directory
+        run: |
+          mkdir -p release-assets
+
+      - name: Create platform-specific zip files
+        run: |
+          # Get the version without v prefix
+          VERSION=${GITHUB_REF#refs/tags/v}
+          
+          # Create release assets for different platforms and AI agents
+          bash .github/workflows/scripts/create-release-packages.sh "$VERSION" "$GITHUB_WORKSPACE/release-assets"
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          artifacts: "dist/*,release-assets/*"
+
+      - name: Publish to PyPI
+        env:
+          UV_PUBLISH_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          uv publish

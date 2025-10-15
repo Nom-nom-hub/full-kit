@@ -1,0 +1,160 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+
+      - name: Install dependencies
+        run: |
+          uv pip install mkdocs
+
+      - name: Build Documentation
+        run: |
+          # Create a basic mkdocs setup if not exists
+          cat > mkdocs.yml << EOF
+          site_name: Full Kit Documentation
+          nav:
+            - Home: index.md
+            - Getting Started: getting-started.md
+            - Goal-Driven Development: gdd.md
+            - Blueprint-Driven Development: bdd.md
+            - Spec-Driven Development: sdd.md
+            - Commands: commands.md
+            - Templates: templates.md
+          theme: 
+            name: material
+          EOF
+          
+          # Create basic documentation files
+          mkdir -p docs
+          cp README.md docs/index.md
+          
+          cat > docs/getting-started.md << EOF
+          # Getting Started with Full Kit
+
+          Full Kit combines three powerful development methodologies: Goal-Driven Development (GDD), Blueprint-Driven Development (BDD), and Spec-Driven Development (SDD).
+
+          ## Installation
+
+          \\\`bash
+          uvx fullkit-cli init my-project
+          # or install globally
+          uv tool install fullkit-cli
+          fullkit init my-project
+          \\`
+
+          ## Quick Start
+
+          1. Define your goals: \`/fullkit.goal\`
+          2. Create architectural blueprints: \`/fullkit.blueprint\`
+          3. Write specifications: \`/fullkit.specify\`
+          4. Plan implementation: \`/fullkit.plan\`
+          5. Generate tasks: \`/fullkit.tasks\`
+          6. Implement: \`/fullkit.implement\`
+          EOF
+          
+          cat > docs/gdd.md << EOF
+          # Goal-Driven Development (GDD)
+
+          Goal-Driven Development focuses on high-level business objectives and outcomes rather than implementation details. GDD asks:
+          - What are we trying to achieve?
+          - How will we measure success?
+          - What business value does this create?
+          EOF
+          
+          cat > docs/bdd.md << EOF
+          # Blueprint-Driven Development (BDD)
+
+          Blueprint-Driven Development emphasizes architectural planning and system design. BDD addresses:
+          - How should the system be structured?
+          - What patterns and principles should guide the design?
+          - What are the key architectural decisions?
+          EOF
+          
+          cat > docs/sdd.md << EOF
+          # Spec-Driven Development (SDD)
+
+          Spec-Driven Development uses detailed specifications that generate working implementations. SDD ensures:
+          - Specifications become executable and generate code
+          - Traceability between requirements and implementation
+          - Consistency and quality across the codebase
+          EOF
+          
+          cat > docs/commands.md << EOF
+          # Full Kit Commands
+
+          Full Kit provides commands for all three methodologies:
+
+          - \`/fullkit.goal\` - Define high-level business objectives
+          - \`/fullkit.blueprint\` - Create architectural blueprints
+          - \`/fullkit.specify\` - Create detailed specifications
+          - \`/fullkit.plan\` - Generate implementation plans
+          - \`/fullkit.tasks\` - Create actionable task lists
+          - \`/fullkit.implement\` - Execute implementation
+          - \`/fullkit.clarify\` - Clarify underspecified areas
+          - \`/fullkit.analyze\` - Cross-artifact consistency analysis
+          - \`/fullkit.checklist\` - Generate quality checklists
+          EOF
+          
+          cat > docs/templates.md << EOF
+          # Templates
+
+          Full Kit uses templates for each methodology:
+          - Goal templates for business objectives
+          - Blueprint templates for architectural planning
+          - Spec templates for detailed requirements
+          - Plan templates for implementation approach
+          - Task templates for actionable items
+          EOF
+
+          # Build the documentation site
+          mkdocs build
+
+          # Create a basic index.html to redirect to the docs
+          cat > site/index.html << EOL
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>Redirecting...</title>
+              <meta charset=\"utf-8\">
+              <meta http-equiv=\"refresh\" content=\"0; url=./index.html\">
+          </head>
+          <body>
+              <p>If you are not redirected automatically, follow this <a href=\"./index.html\">link</a>.</p>
+          </body>
+          </html>
+          EOL
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: 'site'
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+
+    - name: Install dependencies
+      run: |
+        uv pip install --system -e .
+
+    - name: Verify CLI installation
+      run: |
+        # Check that the fullkit command is available and has help
+        python -m fullkit_cli --help | head -20
+        
+    - name: Import test
+      run: |
+        python -c "
+        import fullkit_cli
+        print('Successfully imported fullkit_cli')
+        print(f'Available agents: {len(fullkit_cli.AGENT_CONFIG)}')
+        print(f'Agent example: {list(fullkit_cli.AGENT_CONFIG.keys())[0]}')
+        "
+
+    - name: Verify package metadata
+      run: |
+        python -c "
+        import importlib.metadata
+        metadata = importlib.metadata.metadata('fullkit-cli')
+        print(f'Name: {metadata[\"Name\"]}')
+        print(f'Version: {metadata[\"Version\"]}')
+        print(f'Summary: {metadata[\"Summary\"]}')
+        "
