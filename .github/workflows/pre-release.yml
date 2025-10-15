@@ -26,7 +26,7 @@ jobs:
       - name: Update version in pyproject.toml
         run: |
           # Install toml manipulation tool
-          uv pip install toml-cli
+          uv pip install --system toml-cli
           
           # Update version
           toml set pyproject.toml project.version "${{ github.event.inputs.version }}" > temp.toml && mv temp.toml pyproject.toml
@@ -44,7 +44,7 @@ jobs:
 
       - name: Build package
         run: |
-          uv pip install build
+          uv pip install --system build
           python -m build
 
       - name: Create Pre-release
